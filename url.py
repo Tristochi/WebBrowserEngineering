@@ -2,28 +2,43 @@ import socket
 import ssl 
 
 class URL:
-    def __init__(self, url):
-        self.scheme, url = url.split("://", 1)
-        assert self.scheme in ["http", "https", "file"]
+    def __init__(self, url=None):
+        if url == None:
+            self.scheme = "file"
+            self.host = "C:/test.html"
+        else:
+            self.scheme, url = url.split("://", 1)
+            assert self.scheme in ["http", "https", "file"]
 
-        if self.scheme == "file":
-            url = url[1:]
+            if self.scheme == "file":
+                self.host = url[1:]
+                
+            else:
+                if "/" not in url:
+                    url = url + "/"
+                self.host, url = url.split("/", 1)
+                self.path = "/" + url
 
-        if "/" not in url:
-            url = url + "/"
-        self.host, url = url.split("/", 1)
-        self.path = "/" + url
+                # Encyrpted HTTP connections usually user port 443 instead of port 80
+                if self.scheme == "http":
+                    self.port = 80
+                elif self.scheme == "https":
+                    self.port = 443
+                
+                # Allow for custom ports
+                if ":" in self.host:
+                    self.host, port = self.host.split(":", 1)
+                    self.port = int(port)
+    
+    def open_file(self):
+        print(self.host)
+        file = open(self.host, mode='r', encoding='utf8')
+        file_content = file.read()
 
-        # Encyrpted HTTP connections usually user port 443 instead of port 80
-        if self.scheme == "http":
-            self.port = 80
-        elif self.scheme == "https":
-            self.port = 443
-        
-        # Allow for custom ports
-        if ":" in self.host:
-            self.host, port = self.host.split(":", 1)
-            self.port = int(port)
+        return file_content
+
+    def get_scheme(self):
+        return self.scheme 
     
     def request(self):
         # Define socket and establish a connection

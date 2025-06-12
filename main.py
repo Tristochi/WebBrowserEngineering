@@ -11,11 +11,17 @@ def show(body):
             print(c, end="")
 
 def load(url):
-    body = url.request()
-    show(body)
+    if url.get_scheme() == "file":
+        show(url.open_file())
+    else:
+        body = url.request()
+        show(body)
 
 # This allows us to run the file from the command line
 if __name__ == "__main__":
     import sys
-    load(URL(sys.argv[1]))
-
+    if len(sys.argv) > 1:
+        load(URL(sys.argv[1]))
+    else:
+        url = URL()
+        show(url.open_file())
