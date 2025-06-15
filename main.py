@@ -2,13 +2,29 @@ from url import *
 
 def show(body):
     in_tag = False
+    entity = False
+    entity_str = ""
     for c in body:
         if c == "<":
             in_tag = True
         elif c == ">":
             in_tag = False
-        elif not in_tag:
+        
+        if entity:
+            entity_str += c
+        if c == "&":
+            entity = True
+            entity_str += c
+        elif c == ";":
+            entity = False
+            if entity_str == "&lt;":
+                c = "<"
+            elif entity_str == "&gt;":
+                c = ">"
+        if not in_tag and not entity:
             print(c, end="")
+            entity_str = ""
+            
 
 def load(url):
     if url.get_scheme() == "file":
