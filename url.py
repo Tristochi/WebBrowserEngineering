@@ -7,13 +7,15 @@ class URL:
             self.scheme = "file"
             self.host = "C:/test.html"
         else:
-            self.scheme, url = url.split("://", 1)
-            assert self.scheme in ["http", "https", "file"]
+            self.scheme, url = url.split(":", 1)
+            assert self.scheme in ["http", "https", "file", "data"]
 
             if self.scheme == "file":
                 self.host = url[1:]
-                
+            elif self.scheme == "data":
+                self.content_type, self.body = url.split(",", 1)     
             else:
+                url = url.split("//",1)[1]
                 if "/" not in url:
                     url = url + "/"
                 self.host, url = url.split("/", 1)
@@ -39,6 +41,9 @@ class URL:
 
     def get_scheme(self):
         return self.scheme 
+
+    def get_body(self):
+        return self.body
     
     def request(self):
         # Define socket and establish a connection

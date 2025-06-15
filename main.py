@@ -13,6 +13,8 @@ def show(body):
 def load(url):
     if url.get_scheme() == "file":
         show(url.open_file())
+    elif url.get_scheme() == "data":
+        show(url.get_body())
     else:
         body = url.request()
         show(body)
