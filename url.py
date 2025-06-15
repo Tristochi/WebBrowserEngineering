@@ -8,7 +8,7 @@ class URL:
             self.host = "C:/test.html"
         else:
             self.scheme, url = url.split(":", 1)
-            assert self.scheme in ["http", "https", "file", "data"]
+            assert self.scheme in ["http", "https", "file", "data", "view-source"]
 
             if self.scheme == "file":
                 self.host = url[1:]
@@ -22,7 +22,7 @@ class URL:
                 self.path = "/" + url
 
                 # Encyrpted HTTP connections usually user port 443 instead of port 80
-                if self.scheme == "http":
+                if self.scheme == "http" or self.scheme == "view-source":
                     self.port = 80
                 elif self.scheme == "https":
                     self.port = 443
@@ -86,7 +86,8 @@ class URL:
 
         content = response.read()
         s.close()
-
+        file = open("file.txt", "w")
+        file.write(content)
         return content
     
     
