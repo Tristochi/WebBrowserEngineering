@@ -82,13 +82,16 @@ class URL:
             header, value = line.split(":", 1)
             response_headers[header.casefold()] = value.strip()
 
-        print(response_headers)
+        if int(status) >= 300 and int(status) < 400:
+            print(response_headers)
+            return (status, response_headers['location'])
+        
         assert "transfer-encoding" not in response_headers
         assert "content-encoding" not in response_headers
 
         content = response.read(int(response_headers['content-length'])).decode('utf-8')
         #s.close()
         
-        return content
+        return (status, content)
     
     
