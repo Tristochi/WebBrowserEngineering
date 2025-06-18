@@ -64,30 +64,31 @@ class URL:
         # Send some data using the send method
         request = "GET {} HTTP/1.0\r\n".format(self.path)
         request += "Host: {}\r\n".format(self.host)
-        request += "Connection: close\r\n"
+        #request += "Connection: close\r\n"
+        request += "Connection: keep-alive\r\n"
         request += "User-Agent: TristachoBrowser\r\n"
         request += "\r\n"
         s.send(request.encode("utf8"))
 
         # Read the bits as they come in response
-        response = s.makefile("r", encoding="utf8", newline="\r\n")
-        statusline = response.readline()
+        response = s.makefile("rb", encoding="utf8", newline="\r\n")
+        statusline = response.readline().decode('utf-8')
         version, status, explanation = statusline.split(" ", 2)
 
         response_headers = {}
         while True:
-            line = response.readline()
+            line = response.readline().decode('utf-8')
             if line == "\r\n": break
             header, value = line.split(":", 1)
             response_headers[header.casefold()] = value.strip()
 
+        print(response_headers)
         assert "transfer-encoding" not in response_headers
         assert "content-encoding" not in response_headers
 
-        content = response.read()
-        s.close()
-        file = open("file.txt", "w")
-        file.write(content)
+        content = response.read(int(response_headers['content-length'])).decode('utf-8')
+        #s.close()
+        
         return content
     
     

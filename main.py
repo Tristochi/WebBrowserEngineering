@@ -35,9 +35,9 @@ def show(body, scheme):
 
 def load(url):
     if url.get_scheme() == "file":
-        show(url.open_file())
+        show(url.open_file(), scheme="file")
     elif url.get_scheme() == "data":
-        show(url.get_body())
+        show(url.get_body(), scheme="data")
     else:
         body = url.request()
         scheme = url.get_scheme()
