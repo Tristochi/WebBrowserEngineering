@@ -35,14 +35,22 @@ def show(body, scheme):
 
 def load(url):
     if url.get_scheme() == "file":
-        show(url.open_file())
+        show(url.open_file(), scheme="file")
     elif url.get_scheme() == "data":
-        show(url.get_body())
+        show(url.get_body(), scheme="data")
     else:
-        body = url.request()
+        response = url.request()
+        if 300 <= int(response[0]) < 400:
+            url = URL(response[1])
+            for i in range(3):
+                response = url.request()
+                if not (300 <= int(response[0]) < 400):
+                    break
+            
+
         scheme = url.get_scheme()
         print(f"Scheme: {scheme}")
-        show(body, scheme)
+        show(response[1], scheme)
 
 # This allows us to run the file from the command line
 if __name__ == "__main__":

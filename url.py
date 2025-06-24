@@ -61,7 +61,7 @@ class URL:
                     cached_html += line 
             
             if cached_html != "":
-                return cached_html
+                return ("200", cached_html)
             
             
 
@@ -82,33 +82,38 @@ class URL:
         # Send some data using the send method
         request = "GET {} HTTP/1.0\r\n".format(self.path)
         request += "Host: {}\r\n".format(self.host)
-        request += "Connection: close\r\n"
+        #request += "Connection: close\r\n"
+        request += "Connection: keep-alive\r\n"
         request += "User-Agent: TristachoBrowser\r\n"
         request += "\r\n"
         s.send(request.encode("utf8"))
 
         # Read the bits as they come in response
-        response = s.makefile("r", encoding="utf8", newline="\r\n")
-        statusline = response.readline()
+        response = s.makefile("rb", encoding="utf8", newline="\r\n")
+        statusline = response.readline().decode('utf-8')
         version, status, explanation = statusline.split(" ", 2)
 
         response_headers = {}
         while True:
-            line = response.readline()
+            line = response.readline().decode('utf-8')
             if line == "\r\n": break
             header, value = line.split(":", 1)
             response_headers[header.casefold()] = value.strip()
 
+        if int(status) >= 300 and int(status) < 400:
+            print(response_headers)
+            return (status, response_headers['location'])
+        
         assert "transfer-encoding" not in response_headers
         assert "content-encoding" not in response_headers
+       
 
-        content = response.read()
-        s.close()
-
+        content = response.read(int(response_headers['content-length'])).decode('utf-8')
+        #s.close()
         if self.scheme in ['http', 'https']:
-            self.cache_page(content)
+            self.cache_page(content)        
         
-        return content
+        return (status, content)
     
     def cache_page(self, content):
         tmp = StringIO()
