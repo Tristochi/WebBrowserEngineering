@@ -1,5 +1,6 @@
 import socket
 import ssl 
+from io import StringIO 
 
 class URL:
     def __init__(self, url=None):
@@ -46,8 +47,25 @@ class URL:
         return self.body
     
     def request(self):
-        # Define socket and establish a connection
-        
+        # Check if page is already cached before making request
+        with open("cache.txt", "r") as file:
+            cached_html = ""
+            cache_hit = False
+            for ind, line in enumerate(file,0):
+                if f"{self.host}{self.path}" in line:
+                    #print("Cache hit")
+                    cache_hit = True 
+                elif f"{'-' * 10}" in line:
+                    cache_hit = False 
+                if cache_hit and f"{'*' * 10}" not in line:
+                    cached_html += line 
+            
+            if cached_html != "":
+                return cached_html
+            
+            
+
+        # Define socket and establish a connection        
         s = socket.socket(
             family=socket.AF_INET,
             type=socket.SOCK_STREAM,
@@ -86,8 +104,25 @@ class URL:
 
         content = response.read()
         s.close()
-        file = open("file.txt", "w")
-        file.write(content)
+
+        if self.scheme in ['http', 'https']:
+            self.cache_page(content)
+        
         return content
+    
+    def cache_page(self, content):
+        tmp = StringIO()
+
+        tmp.write(f"{self.host}{self.path}")
+        tmp.seek(0,2)
+        tmp.write(f"\n{'*' * 10}\n")
+        tmp.seek(0, 2)
+        tmp.write(content)
+        tmp.seek(0,2)
+        tmp.write(f"\n{'-'*10}")
+        tmp.seek(0)
+
+        file = open("cache.txt", "a")
+        file.write(tmp.getvalue())
     
     
