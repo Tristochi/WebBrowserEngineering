@@ -1,6 +1,7 @@
 import socket
 import ssl 
 from io import StringIO 
+import gzip
 
 class URL:
     def __init__(self, url=None):
@@ -48,7 +49,7 @@ class URL:
     
     def request(self):
         # Check if page is already cached before making request
-        with open("cache.txt", "r") as file:
+        with open("cache.txt", mode="r", encoding="utf-8") as file:
             cached_html = ""
             cache_hit = False
             for ind, line in enumerate(file,0):
@@ -85,12 +86,14 @@ class URL:
         #request += "Connection: close\r\n"
         request += "Connection: keep-alive\r\n"
         request += "User-Agent: TristachoBrowser\r\n"
+        request += "Accept-Encoding: gzip\r\n"
         request += "\r\n"
         s.send(request.encode("utf8"))
 
         # Read the bits as they come in response
-        response = s.makefile("rb", encoding="utf8", newline="\r\n")
+        response = s.makefile("rb", encoding="utf-8", newline="\r\n")
         statusline = response.readline().decode('utf-8')
+
         version, status, explanation = statusline.split(" ", 2)
 
         response_headers = {}
@@ -100,18 +103,62 @@ class URL:
             header, value = line.split(":", 1)
             response_headers[header.casefold()] = value.strip()
 
+        print(f"Response Headers: {response_headers}")
+
         if int(status) >= 300 and int(status) < 400:
             print(response_headers)
             return (status, response_headers['location'])
         
-        assert "transfer-encoding" not in response_headers
-        assert "content-encoding" not in response_headers
-       
 
-        content = response.read(int(response_headers['content-length'])).decode('utf-8')
+        #assert "content-encoding" not in response_headers
+        if "content-encoding" in response_headers:
+            #print(f"Content-encoding: {response_headers['content-encoding']}")
+            if response_headers['content-encoding'] == "gzip":
+                if "transfer-encoding" in response_headers:
+                    transfer_encoding = response_headers['transfer-encoding'].split(",")
+                    if "chunked" in transfer_encoding:
+                        #Typically the content-encoding is applied before the transfer-encoding so I need to decompress
+                        #but I will have to get each chunk, append together, then decompress. 
+                        #Chunk length is specified by a hex num at the beginning of each chunk. The last chunk has 0 at the beginning. 
+                        while True:
+                            length = response.readline().decode("utf-8").strip()
+                            try:
+                                length = int(length,16)
+                            except:
+                                continue 
+
+                            if length == 0:
+                                break 
+
+                            chunked_data = response.read(length)
+                            response.read(2)
+                            content += chunked_data
+                        
+                        content = gzip.decompress(content.decode('utf-8'))
+                            
+                else:
+                    content = gzip.decompress(response.read(int(response_headers['content-length']))).decode('utf-8')
+        elif "transfer-encoding" in response_headers and "content-encoding" not in response_headers:
+            while True:
+                length = response.readline().decode("utf-8").strip()
+                try:
+                    length = int(length,16)
+                except:
+                    continue 
+
+                if length == 0:
+                    break 
+
+                chunked_data = response.read(length).decode('utf-8')
+                response.read(2)
+                content += chunked_data
+            
+        else:
+            content = response.read(int(response_headers['content-length'])).decode('utf-8')
         #s.close()
         if self.scheme in ['http', 'https']:
             self.cache_page(content)        
+        
         
         return (status, content)
     
@@ -124,10 +171,10 @@ class URL:
         tmp.seek(0, 2)
         tmp.write(content)
         tmp.seek(0,2)
-        tmp.write(f"\n{'-'*10}")
+        tmp.write(f"\n{'-'*10}\n")
         tmp.seek(0)
 
-        file = open("cache.txt", "a")
+        file = open(file="cache.txt", encoding="utf-8",mode="a")
         file.write(tmp.getvalue())
     
     
