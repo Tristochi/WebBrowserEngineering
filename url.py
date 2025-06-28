@@ -117,49 +117,17 @@ class URL:
                 if "transfer-encoding" in response_headers:
                     transfer_encoding = response_headers['transfer-encoding'].split(",")
                     if "chunked" in transfer_encoding:
-                        #Typically the content-encoding is applied before the transfer-encoding so I need to decompress
-                        #but I will have to get each chunk, append together, then decompress. 
-                        #Chunk length is specified by a hex num at the beginning of each chunk. The last chunk has 0 at the beginning. 
-                        while True:
-                            length = response.readline().decode("utf-8").strip()
-                            try:
-                                length = int(length,16)
-                            except:
-                                continue 
-
-                            if length == 0:
-                                break 
-
-                            chunked_data = response.read(length)
-                            response.read(2)
-                            content += chunked_data
-                        
-                        content = gzip.decompress(content.decode('utf-8'))
-                            
+                        data = self.chunked_data(response)
+                        content = gzip.decompress(data)
                 else:
                     content = gzip.decompress(response.read(int(response_headers['content-length']))).decode('utf-8')
         elif "transfer-encoding" in response_headers and "content-encoding" not in response_headers:
-            while True:
-                length = response.readline().decode("utf-8").strip()
-                try:
-                    length = int(length,16)
-                except:
-                    continue 
-
-                if length == 0:
-                    break 
-
-                chunked_data = response.read(length).decode('utf-8')
-                response.read(2)
-                content += chunked_data
-            
+            content = self.chunked_data(response=response)
         else:
             content = response.read(int(response_headers['content-length'])).decode('utf-8')
-        #s.close()
+        
         if self.scheme in ['http', 'https']:
             self.cache_page(content)        
-        
-        
         return (status, content)
     
     def cache_page(self, content):
@@ -177,4 +145,20 @@ class URL:
         file = open(file="cache.txt", encoding="utf-8",mode="a")
         file.write(tmp.getvalue())
     
+    def chunked_data(self, response):
+        content = ""
+        while True:
+                    length = response.readline().decode('utf-8').strip()
+                    try:
+                        length = int(length,16)
+                    except:
+                        continue 
+
+                    if length == 0:
+                        break 
+
+                    chunked_data = response.read(length).decode('utf-8')
+                    response.read(2)
+                    content += chunked_data + " "
+        return content 
     
