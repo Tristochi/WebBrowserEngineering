@@ -4,7 +4,7 @@ import main
 
 WIDTH, HEIGHT = 800, 600
 HSTEP, VSTEP = 13, 18
-
+SCROLL_STEP = 100
 class Browser:
     def __init__(self):
         self.window = tkinter.Tk()
@@ -13,6 +13,11 @@ class Browser:
             width=WIDTH,
             height=HEIGHT
         )
+        self.display_list = ""
+        self.scroll = 0
+        self.window.bind("<Down>", self.scrolldown)
+        self.window.bind("<Up>", self.scrollup)
+        self.window.bind("<MouseWheel>", self.scrollwheel)
         self.canvas.pack()
 
     def load(self, url):
@@ -33,16 +38,31 @@ class Browser:
             scheme = url.get_scheme()
             #print(f"Scheme: {scheme}")
             text = main.lex(response[1], scheme)
-        
-        #self.canvas.create_rectangle(10, 20, 400, 300)
-        #self.canvas.create_oval(100, 100, 150, 150)
-        #self.canvas.create_text(200, 150, text="Hi!")
-        cursor_x, cursor_y = HSTEP, VSTEP 
-        for c in text:
-            self.canvas.create_text(cursor_x, cursor_y, text=c)
-            cursor_x += HSTEP
+            self.display_list = main.layout(text)
+            self.draw()
 
-            if cursor_x >= WIDTH - HSTEP:
-                cursor_y += VSTEP 
-                cursor_x = HSTEP 
-        
+    def draw(self):
+        self.canvas.delete("all")
+        for x, y, c in self.display_list:
+            # Avoid drawing characters that are not on screen to speed up the draw time.
+            if y > self.scroll + HEIGHT: continue 
+            if y + VSTEP < self.scroll: continue
+            self.canvas.create_text(x, y - self.scroll, text=c)
+    
+    def scrolldown(self,e):
+        last_x_pos, last_y_pos, c = self.display_list[-2]
+        print(f"Current scroll: {self.scroll}, Scroll pos + scroll step: {self.scroll+SCROLL_STEP}, Last Y pos: {last_y_pos}")
+        if last_y_pos - self.scroll > HEIGHT:
+            self.scroll += SCROLL_STEP
+            self.draw()
+    
+    def scrollup(self, e):
+        if self.scroll > 0:
+            self.scroll -= SCROLL_STEP 
+            self.draw()
+    
+    def scrollwheel(self, e):
+        if e.delta > 0:
+            self.scrollup(e)
+        else: 
+            self.scrolldown(e)

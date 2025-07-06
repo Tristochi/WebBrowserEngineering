@@ -1,6 +1,9 @@
 from url import *
 from browser import *
 
+WIDTH, HEIGHT = 800, 600
+HSTEP, VSTEP = 13, 18
+
 def show(body, scheme):
     in_tag = False
     entity = False
@@ -63,7 +66,9 @@ def lex(body, scheme):
         
         if entity:
             entity_str += c
-
+    file = open("test.txt", "a",encoding="utf-8")
+    for c in text: 
+        file.write(c)
     return text 
 
 def load(url):
@@ -84,6 +89,19 @@ def load(url):
         scheme = url.get_scheme()
         print(f"Scheme: {scheme}")
         lex(response[1], scheme)
+
+def layout(text):
+    display_list = []
+    cursor_x, cursor_y = HSTEP, VSTEP 
+
+    for c in text:
+        display_list.append((cursor_x, cursor_y, c))
+        cursor_x += HSTEP
+        if cursor_x >= WIDTH - HSTEP:
+            cursor_y += VSTEP 
+            cursor_x = HSTEP 
+            
+    return display_list 
 
 # This allows us to run the file from the command line
 if __name__ == "__main__":
