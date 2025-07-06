@@ -58,7 +58,7 @@ class URL:
                     cache_hit = True 
                 elif f"{'-' * 10}" in line:
                     cache_hit = False 
-                if cache_hit and f"{'*' * 10}" not in line:
+                elif cache_hit and f"{'*' * 10}" not in line:
                     cached_html += line 
             
             if cached_html != "":
