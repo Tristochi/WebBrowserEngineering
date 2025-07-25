@@ -41,11 +41,17 @@ def lex(body, scheme):
     in_tag = False
     entity = False
     entity_str = ""
+    element = ""
     for c in body:
         if c == "<":
             in_tag = True
         elif c == ">":
-            in_tag = False
+            element += c
+            in_tag = False 
+            if element == "<br>":
+                c = "\\n"
+                text += c
+                
         elif c == "&":
             entity = True 
         elif c == ";":
@@ -55,16 +61,20 @@ def lex(body, scheme):
                 c = "<"
             elif entity_str == "&gt;":
                 c=">"
-            print(entity_str)
+            text += c
+            #print(entity_str)
         elif not in_tag and not entity and scheme != "view-source":
             text+=c
             entity_str = ""
+            element = ""
         
         if scheme == "view-source": 
             text+=c
             entity_str = ""
-        
-        if entity:
+            element = ""
+        if in_tag:
+            element += c
+        elif entity:
             entity_str += c
     file = open("test.txt", "a",encoding="utf-8")
     for c in text: 
@@ -90,16 +100,38 @@ def load(url):
         print(f"Scheme: {scheme}")
         lex(response[1], scheme)
 
-def layout(text):
+def layout(text, width = WIDTH, height = HEIGHT, hstep = HSTEP, vstep = VSTEP ):
     display_list = []
     cursor_x, cursor_y = HSTEP, VSTEP 
 
+    newline = ""
+    special_ch = False 
+    i = 0 
     for c in text:
-        display_list.append((cursor_x, cursor_y, c))
-        cursor_x += HSTEP
-        if cursor_x >= WIDTH - HSTEP:
-            cursor_y += VSTEP 
-            cursor_x = HSTEP 
+        if c == "\\":
+            special_ch = True 
+            print("Special ch")
+            newline += c
+            i += 1
+        elif special_ch:
+            newline += c 
+            i += 1
+            print(f"char {newline} i {i}")
+        if i == 2:
+            special_ch = False 
+            i = 0
+            if newline == "\\n":
+                print("Hit")
+                display_list.append((cursor_x, cursor_y, ""))
+                cursor_y += (vstep + 10)
+                cursor_x = hstep
+            newline = ""
+        elif not special_ch:
+            display_list.append((cursor_x, cursor_y, c))
+            cursor_x += HSTEP
+            if cursor_x >= width - hstep:
+                cursor_y += vstep 
+                cursor_x = hstep 
             
     return display_list 
 
@@ -108,17 +140,8 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
         Browser().load(URL(sys.argv[1]))
-        tkinter.mainloop()
+        mainloop()
     else:
         url = URL()
         scheme = url.get_scheme()
-        show(url.open_file(), scheme)
-
-"""     if len(sys.argv) > 1:
-        load(URL(sys.argv[1]))
-    else:
-        url = URL()
-        scheme = url.get_scheme()
-        show(url.open_file(), scheme) """
-
-    
+        show(url.open_file(), scheme) 
