@@ -100,7 +100,7 @@ def load(url):
         print(f"Scheme: {scheme}")
         lex(response[1], scheme)
 
-def layout(text):
+def layout(text, width = WIDTH, height = HEIGHT, hstep = HSTEP, vstep = VSTEP ):
     display_list = []
     cursor_x, cursor_y = HSTEP, VSTEP 
 
@@ -123,15 +123,15 @@ def layout(text):
             if newline == "\\n":
                 print("Hit")
                 display_list.append((cursor_x, cursor_y, ""))
-                cursor_y += (VSTEP + 10)
-                cursor_x = HSTEP
+                cursor_y += (vstep + 10)
+                cursor_x = hstep
             newline = ""
         elif not special_ch:
             display_list.append((cursor_x, cursor_y, c))
             cursor_x += HSTEP
-            if cursor_x >= WIDTH - HSTEP:
-                cursor_y += VSTEP 
-                cursor_x = HSTEP 
+            if cursor_x >= width - hstep:
+                cursor_y += vstep 
+                cursor_x = hstep 
             
     return display_list 
 
@@ -140,17 +140,8 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
         Browser().load(URL(sys.argv[1]))
-        tkinter.mainloop()
+        mainloop()
     else:
         url = URL()
         scheme = url.get_scheme()
-        show(url.open_file(), scheme)
-
-"""     if len(sys.argv) > 1:
-        load(URL(sys.argv[1]))
-    else:
-        url = URL()
-        scheme = url.get_scheme()
-        show(url.open_file(), scheme) """
-
-    
+        show(url.open_file(), scheme) 
